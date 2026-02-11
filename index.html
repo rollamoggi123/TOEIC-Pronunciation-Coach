@@ -8,7 +8,6 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>TOEIC 750+ 聽力反射教練</title>
     
-    <!-- PWA Icon & Manifest (Base64 Embedded for Single File Portability) -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎧</text></svg>">
     <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%230f172a%22/><text x=%2250%22 y=%2250%22 dominant-baseline=%22central%22 text-anchor=%22middle%22 font-size=%2270%22>🎧</text></svg>">
     <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlRPRUlDIDc1MCsgQ29hY2giLAogICJzaG9ydF9uYW1lIjogIlRPRUlDIFJlZmxleCIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMGYxNzNhIiwKICAidGhlbWVfY29sb3IiOiAiIzBmMTczYSIsCiAgImljb25zIjogW3sKICAgICJzcmMiOiAiZGF0YTppbWFnZS9zdmcreG1sOzY0LDxzdmcgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJyB2aWV3Qm94PScwIDAgMTAwIDEwMCc+PHRleHQgeT0nLjllbScgZm9udC1zaXplPSc5MCc+8J+OpywvdGV4dD48L3N2Zz4iLAogICAgInNpemVzIjogIjE5MngxOTIiLAogICAgInR5cGUiOiAiaW1hZ2Uvc3ZnK3htbCIKICB9XQp9">
@@ -18,7 +17,6 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
         
-        /* Mobile Viewport Fixes */
         body { 
             font-family: 'Inter', 'Noto Sans TC', sans-serif; 
             -webkit-tap-highlight-color: transparent;
@@ -32,10 +30,14 @@
         .loading-dots:after { content: '.'; animation: dots 1.5s steps(5, end) infinite; }
         @keyframes dots { 0%, 20% { content: '.'; } 40% { content: '..'; } 60% { content: '...'; } 80%, 100% { content: ''; } }
         
-        /* Slider Styling */
         input[type=range] { -webkit-appearance: none; background: transparent; }
         input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 6px; cursor: pointer; background: #334155; border-radius: 99px; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%; background: #3b82f6; cursor: pointer; margin-top: -7px; border: 2px solid #1e293b; }
+        
+        audio { height: 30px; width: 100%; border-radius: 15px; margin-top: 5px; }
+        audio::-webkit-media-controls-panel { background-color: #1e293b; }
+        audio::-webkit-media-controls-current-time-display,
+        audio::-webkit-media-controls-time-remaining-display { color: #fff; }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-100 flex flex-col items-center p-4">
@@ -43,7 +45,7 @@
     <header class="w-full max-w-2xl mt-2 mb-4 flex justify-between items-center">
         <div>
             <h1 class="text-xl font-bold">TOEIC <span class="gradient-text">Reflex</span></h1>
-            <p class="text-slate-400 text-[10px]">AI 聽力反射教練</p>
+            <p class="text-slate-400 text-[10px]">聽說雙修・語音反射教練</p>
         </div>
         <div class="flex gap-2">
             <button id="wakeLockBtn" class="text-slate-500 hover:text-yellow-400 p-2 transition" title="保持螢幕常亮"><i class="fas fa-lightbulb"></i></button>
@@ -60,22 +62,51 @@
         <button id="saveKeyBtn" class="mt-3 w-full bg-blue-600 hover:bg-blue-500 text-sm font-bold py-2 rounded-lg transition">儲存設定</button>
     </div>
 
+    <!-- Score Info Modal -->
+    <div id="scoreInfoModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4 backdrop-blur-sm" onclick="this.classList.add('hidden')">
+        <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl max-w-sm w-full shadow-2xl" onclick="event.stopPropagation()">
+            <h3 class="text-lg font-bold mb-4 text-white">嚴格評分標準</h3>
+            <ul class="space-y-4 text-sm">
+                <li class="flex gap-3">
+                    <span class="text-yellow-400 font-bold w-12">90+</span>
+                    <div class="text-slate-300">
+                        <strong class="text-white">Native (母語感)</strong><br>
+                        連音完美，語調自然，節奏強弱分明。
+                    </div>
+                </li>
+                <li class="flex gap-3">
+                    <span class="text-green-400 font-bold w-12">75-89</span>
+                    <div class="text-slate-300">
+                        <strong class="text-white">Business (商務級)</strong><br>
+                        清晰可懂，但連音(Linking)或變音(Flap T)偶有遺漏。
+                    </div>
+                </li>
+                <li class="flex gap-3">
+                    <span class="text-blue-400 font-bold w-12">60-74</span>
+                    <div class="text-slate-300">
+                        <strong class="text-white">Student (學術腔)</strong><br>
+                        發音生硬，每個字都切開唸，缺乏英語流動感。
+                    </div>
+                </li>
+            </ul>
+            <button class="mt-6 w-full bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg" onclick="document.getElementById('scoreInfoModal').classList.add('hidden')">了解</button>
+        </div>
+    </div>
+
     <main class="w-full max-w-2xl space-y-4 flex-1">
         
-        <!-- HTTPS Warning -->
         <div id="httpsWarning" class="hidden bg-yellow-500/20 border border-yellow-500/50 text-yellow-200 p-4 rounded-xl text-sm">
             <i class="fas fa-exclamation-triangle mr-2"></i>
             <strong>部署錯誤：</strong> 請使用 Vercel 或 Netlify 等支援 HTTPS 的平台。
         </div>
 
-        <!-- Dashboard -->
         <div class="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-2xl p-5 shadow-2xl">
             <div class="flex gap-2 mb-4">
-                <select id="levelSelect" class="bg-slate-900 border border-slate-700 text-sm rounded-lg px-2 py-2 outline-none w-full truncate">
-                    <option value="L1">L1: 語音拆解 (基礎)</option>
-                    <option value="L2">L2: 關鍵字導航</option>
-                    <option value="L3">L3: 商務場景</option>
-                    <option value="L4">L4: 極限語速</option>
+                <select id="levelSelect" class="bg-slate-900 border border-slate-700 text-sm rounded-lg px-2 py-2 outline-none w-full truncate font-bold text-blue-200">
+                    <option value="L1">L1: 語音手術 (連音/變音)</option>
+                    <option value="L2">L2: 節奏灌輸 (重音/語調)</option>
+                    <option value="L3">L3: 跟讀模仿 (Part 3/4)</option>
+                    <option value="L4">L4: 速度抗壓 (1.2x)</option>
                 </select>
                 <button id="generateBtn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2 rounded-lg transition whitespace-nowrap flex items-center gap-2 shadow-lg shadow-blue-900/20">
                     <i class="fas fa-magic"></i><span>出題</span>
@@ -83,11 +114,21 @@
             </div>
 
             <div id="contentArea" class="min-h-[140px] flex flex-col justify-center items-center text-center space-y-4">
-                <p class="text-slate-500 text-sm italic">輸入 Key 後點擊「出題」開始</p>
+                <p class="text-slate-500 text-sm italic">輸入 Key 後點擊「出題」開始訓練</p>
             </div>
         </div>
 
-        <!-- Controls -->
+        <!-- Drill Section (New Feature) -->
+        <div id="drillSection" class="hidden animate-fade-in px-2">
+            <div class="flex items-center gap-2 mb-2">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">連音拆解特訓 (Linking Drills)</span>
+                <div class="h-px bg-slate-700 flex-1"></div>
+            </div>
+            <div id="drillContainer" class="flex flex-wrap gap-2 justify-center">
+                <!-- Drill items will be injected here -->
+            </div>
+        </div>
+
         <div id="actionButtons" class="grid grid-cols-1 gap-4 opacity-50 pointer-events-none transition-opacity">
             <div class="bg-slate-800/50 border border-slate-700 rounded-2xl p-4 space-y-4">
                 <div class="flex items-center gap-3">
@@ -97,9 +138,8 @@
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <button id="ttsBtn" class="bg-slate-700 active:bg-slate-600 text-white py-4 rounded-xl flex flex-col items-center justify-center gap-1 transition touch-manipulation">
-                        <i id="speakerIcon" class="fas fa-volume-up text-xl"></i><span id="ttsText" class="text-xs">播放範例</span>
+                        <i id="speakerIcon" class="fas fa-volume-up text-xl"></i><span id="ttsText" class="text-xs">播放整句</span>
                     </button>
-                    <!-- Improved Record Button visual feedback -->
                     <button id="recordBtn" class="bg-red-600/20 active:bg-red-600/30 text-red-400 border border-red-600/50 py-4 rounded-xl flex flex-col items-center justify-center gap-1 transition touch-manipulation">
                         <i id="micIcon" class="fas fa-microphone text-xl"></i><span id="recordText" class="text-xs">點擊錄音</span>
                     </button>
@@ -107,33 +147,73 @@
             </div>
         </div>
 
+        <!-- Learning Section -->
+        <div id="learningSection" class="hidden space-y-4 animate-fade-in">
+            <div class="bg-blue-900/10 border border-blue-800/50 rounded-2xl p-5">
+                <div class="space-y-3">
+                    <div>
+                        <h3 class="text-blue-400 font-bold text-xs uppercase tracking-wider mb-1">
+                            <i class="fas fa-star mr-1"></i>聽力盲點
+                        </h3>
+                        <p id="examPointDisplay" class="text-slate-200 text-sm font-medium leading-relaxed"></p>
+                    </div>
+                    <div class="h-px bg-blue-800/30"></div>
+                    <div>
+                        <h3 class="text-slate-400 font-bold text-xs uppercase tracking-wider mb-1">
+                            <i class="fas fa-book mr-1"></i>文法結構
+                        </h3>
+                        <div id="grammarNote" class="text-slate-300 text-xs space-y-1 leading-relaxed"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Feedback -->
         <div id="feedbackSection" class="hidden space-y-4 animate-fade-in pb-8">
             <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-lg">
-                <div class="flex justify-between items-center mb-3">
-                    <h3 class="font-bold text-slate-200 text-sm">教練評分</h3>
-                    <div id="scoreDisplay" class="text-3xl font-black gradient-text">--</div>
-                </div>
-                <div class="space-y-3">
-                    <div class="bg-slate-900 p-3 rounded-lg border border-slate-800">
-                        <p class="text-xs text-slate-500 mb-1">你說的是：</p>
-                        <p id="userSaidDisplay" class="text-red-400 text-sm italic min-h-[1.2em]"></p>
+                <div class="flex justify-between items-end mb-4 border-b border-slate-700 pb-4">
+                    <div>
+                        <h3 class="font-bold text-slate-200 text-sm flex items-center gap-2">
+                            教練診斷 
+                            <button onclick="document.getElementById('scoreInfoModal').classList.remove('hidden')" class="text-slate-500 hover:text-blue-400"><i class="fas fa-question-circle"></i></button>
+                        </h3>
+                        <div class="flex gap-2 mt-1 text-[10px] text-slate-400">
+                            <span>準確度: <span id="accuracyScore" class="text-white font-mono">--</span></span>
+                            <span>|</span>
+                            <span>流暢度: <span id="fluencyScore" class="text-white font-mono">--</span></span>
+                        </div>
                     </div>
-                    <div id="geminiAnalysis" class="text-slate-300 text-sm leading-relaxed"></div>
+                    <div id="scoreDisplay" class="text-4xl font-black gradient-text">--</div>
                 </div>
-            </div>
+                
+                <div class="space-y-4">
+                    <div class="bg-red-900/10 border border-red-900/30 rounded-lg p-3">
+                        <h4 class="text-red-400 text-xs font-bold mb-2 flex items-center gap-2"><i class="fas fa-stethoscope"></i> 發音手術室</h4>
+                        <ul id="weaknessList" class="text-slate-300 text-sm space-y-1 list-disc list-inside">
+                            <li class="text-slate-500 text-xs italic">等待分析...</li>
+                        </ul>
+                    </div>
 
-            <div id="grammarSection" class="bg-blue-900/10 border border-blue-800/50 rounded-2xl p-5">
-                <h3 class="text-blue-400 font-bold mb-2 flex items-center gap-2 text-sm">
-                    <i class="fas fa-book-open"></i>多益 750 文法拆解
-                </h3>
-                <div id="grammarNote" class="text-slate-300 text-sm space-y-2"></div>
+                    <div id="geminiAnalysis" class="text-slate-300 text-sm leading-relaxed bg-slate-900/50 p-3 rounded-lg"></div>
+
+                    <div id="audioPlayerContainer" class="hidden bg-slate-900 p-3 rounded-lg border border-slate-800">
+                        <p class="text-xs text-slate-500 mb-1 flex justify-between">
+                            <span>我的錄音</span>
+                            <span class="text-blue-400 text-[10px]">回放檢查</span>
+                        </p>
+                        <audio id="userAudio" controls></audio>
+                    </div>
+
+                    <div class="bg-slate-900 p-3 rounded-lg border border-slate-800">
+                        <p class="text-xs text-slate-500 mb-1">辨識文字：</p>
+                        <p id="userSaidDisplay" class="text-red-400 text-sm italic min-h-[1.2em] break-words"></p>
+                    </div>
+                </div>
             </div>
         </div>
     </main>
 
     <script>
-        // Init logic
         let apiKey = localStorage.getItem('gemini_api_key') || '';
         const LEAKED_KEY_PREFIX = 'AIzaSyCvFOB';
         
@@ -141,10 +221,9 @@
         let isRecording = false;
         let isProcessing = false;
         let recognition = null;
-        let finalTranscript = '';
-        let wakeLock = null;
-        
-        // Mobile TTS Fix: Global variable to prevent garbage collection
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let audioStream = null;
         let currentUtterance = null;
         let availableVoices = [];
 
@@ -162,42 +241,38 @@
             rateValue: document.getElementById('rateValue'),
             ttsBtn: document.getElementById('ttsBtn'),
             speakerIcon: document.getElementById('speakerIcon'),
-            ttsText: document.getElementById('ttsText'),
             recordBtn: document.getElementById('recordBtn'),
             recordText: document.getElementById('recordText'),
             micIcon: document.getElementById('micIcon'),
+            drillSection: document.getElementById('drillSection'),
+            drillContainer: document.getElementById('drillContainer'),
+            learningSection: document.getElementById('learningSection'),
+            examPointDisplay: document.getElementById('examPointDisplay'),
+            grammarNote: document.getElementById('grammarNote'),
             feedbackSection: document.getElementById('feedbackSection'),
             userSaidDisplay: document.getElementById('userSaidDisplay'),
             scoreDisplay: document.getElementById('scoreDisplay'),
+            accuracyScore: document.getElementById('accuracyScore'),
+            fluencyScore: document.getElementById('fluencyScore'),
+            weaknessList: document.getElementById('weaknessList'),
             geminiAnalysis: document.getElementById('geminiAnalysis'),
-            grammarNote: document.getElementById('grammarNote'),
-            levelSelect: document.getElementById('levelSelect')
+            levelSelect: document.getElementById('levelSelect'),
+            audioPlayerContainer: document.getElementById('audioPlayerContainer'),
+            userAudio: document.getElementById('userAudio')
         };
 
-        // --- Voices Loader (Essential for Mobile) ---
-        function populateVoices() {
-            availableVoices = window.speechSynthesis.getVoices();
-        }
+        function populateVoices() { availableVoices = window.speechSynthesis.getVoices(); }
         populateVoices();
-        if (window.speechSynthesis.onvoiceschanged !== undefined) {
-            window.speechSynthesis.onvoiceschanged = populateVoices;
-        }
+        if (window.speechSynthesis.onvoiceschanged !== undefined) window.speechSynthesis.onvoiceschanged = populateVoices;
 
-        // --- Init Checks ---
         function checkAndInitKey() {
             if (apiKey && apiKey.startsWith(LEAKED_KEY_PREFIX)) {
                 localStorage.removeItem('gemini_api_key');
                 apiKey = '';
-                alert("測試 Key 已過期，請設定您自己的 API Key。");
             }
-
             if (apiKey) {
                 elements.apiKeyInput.value = apiKey;
-                elements.contentArea.innerHTML = `
-                    <div class="text-slate-500 text-sm italic animate-pulse">
-                        <i class="fas fa-check-circle text-green-500 mr-2"></i>API Key 已就緒
-                    </div>
-                `;
+                elements.contentArea.innerHTML = `<div class="text-slate-500 text-sm italic animate-pulse"><i class="fas fa-check-circle text-green-500 mr-2"></i>教練已就緒，請選擇 Level</div>`;
                 elements.generateBtn.classList.add('ring-2', 'ring-blue-400', 'ring-offset-2', 'ring-offset-slate-900');
             } else {
                 elements.apiKeyPanel.classList.remove('hidden');
@@ -209,44 +284,29 @@
             document.getElementById('httpsWarning').classList.remove('hidden');
         }
 
-        // --- Event Listeners ---
         elements.configBtn.addEventListener('click', () => elements.apiKeyPanel.classList.toggle('hidden'));
-        
         elements.saveKeyBtn.addEventListener('click', () => {
             const inputVal = elements.apiKeyInput.value.trim();
             if (inputVal) {
-                if (inputVal.startsWith(LEAKED_KEY_PREFIX)) {
-                    alert("此 Key 已失效，請使用您自己的 Key。");
-                    return;
-                }
+                if (inputVal.startsWith(LEAKED_KEY_PREFIX)) { alert("此 Key 已失效"); return; }
                 apiKey = inputVal;
                 localStorage.setItem('gemini_api_key', apiKey);
                 elements.apiKeyPanel.classList.add('hidden');
                 checkAndInitKey();
-            } else {
-                alert('請輸入 API Key');
-            }
+            } else { alert('請輸入 API Key'); }
         });
 
         elements.rateInput.addEventListener('input', (e) => elements.rateValue.textContent = e.target.value + 'x');
         elements.generateBtn.addEventListener('click', generateSentence);
         elements.ttsBtn.addEventListener('click', () => speak(currentSentence));
 
-        // --- Wake Lock ---
         elements.wakeLockBtn.addEventListener('click', async () => {
             if ('wakeLock' in navigator) {
-                try {
-                    wakeLock = await navigator.wakeLock.request('screen');
-                    elements.wakeLockBtn.classList.remove('text-slate-500');
-                    elements.wakeLockBtn.classList.add('text-yellow-400');
-                    alert("螢幕常亮模式：已開啟");
-                } catch (err) { console.error(err); }
-            } else {
-                alert("瀏覽器不支援此功能");
+                try { await navigator.wakeLock.request('screen'); elements.wakeLockBtn.classList.add('text-yellow-400'); alert("螢幕常亮：ON"); } catch (err) { console.error(err); }
             }
         });
 
-        // --- Speech Recognition ---
+        // --- Recording Setup ---
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
         if (SpeechRecognition) {
@@ -258,47 +318,54 @@
 
             recognition.onstart = () => {
                 isRecording = true;
-                finalTranscript = '';
                 elements.recordBtn.className = "bg-red-600 text-white border border-red-600 py-4 rounded-xl flex flex-col items-center justify-center gap-1 transition touch-manipulation shadow-lg shadow-red-900/50";
                 elements.micIcon.classList.add('animate-pulse');
                 elements.recordText.textContent = '停止並分析';
+                
                 elements.feedbackSection.classList.remove('hidden');
                 elements.userSaidDisplay.textContent = '...';
+                elements.scoreDisplay.textContent = '--';
+                elements.accuracyScore.textContent = '--';
+                elements.fluencyScore.textContent = '--';
+                elements.weaknessList.innerHTML = '<li class="text-slate-500 text-xs italic">等待分析...</li>';
+                elements.geminiAnalysis.textContent = '';
+                elements.audioPlayerContainer.classList.add('hidden');
+                elements.userAudio.src = "";
+                
                 elements.feedbackSection.scrollIntoView({ behavior: 'smooth' });
+                startAudioRecorder();
             };
 
             recognition.onend = () => {
                 isRecording = false;
                 elements.recordBtn.className = "bg-red-600/20 active:bg-red-600/30 text-red-400 border border-red-600/50 py-4 rounded-xl flex flex-col items-center justify-center gap-1 transition touch-manipulation";
                 elements.micIcon.classList.remove('animate-pulse');
-                elements.recordText.textContent = '點擊錄音';
-                
-                if (finalTranscript.trim().length > 0) {
-                    analyzePronunciation(finalTranscript);
-                }
+                elements.recordText.textContent = '重新錄音';
+                stopAudioRecorder();
+
+                const finalText = elements.userSaidDisplay.innerText.replace(/\.\.\./g, '').trim();
+                if (finalText.length > 0) analyzePronunciation(finalText);
             };
 
             recognition.onresult = (event) => {
-                let interim = '';
-                for (let i = event.resultIndex; i < event.results.length; ++i) {
-                    if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript;
-                    else interim += event.results[i][0].transcript;
+                let finalStr = '';
+                let interimStr = '';
+                for (let i = 0; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) finalStr += event.results[i][0].transcript;
+                    else interimStr += event.results[i][0].transcript;
                 }
-                elements.userSaidDisplay.innerHTML = `<span class="text-white">${finalTranscript}</span><span class="text-slate-500">${interim}</span>`;
+                elements.userSaidDisplay.innerHTML = `<span class="text-white">${finalStr}</span><span class="text-slate-500">${interimStr}</span>`;
             };
 
             recognition.onerror = (event) => {
                 console.error(event.error);
-                if(isRecording && event.error !== 'no-speech') recognition.stop();
+                if(isRecording && event.error !== 'no-speech') stopRecording();
                 if(event.error === 'not-allowed') alert("請允許麥克風權限");
             };
 
             elements.recordBtn.addEventListener('click', () => {
-                if (isRecording) {
-                    recognition.stop();
-                } else {
-                    try { recognition.start(); } catch(e) { console.error(e); }
-                }
+                if (isRecording) stopRecording();
+                else startRecording();
             });
         } else {
             elements.recordBtn.disabled = true;
@@ -306,48 +373,104 @@
             alert("iOS 請用 Safari，Android 請用 Chrome");
         }
 
-        // --- Core Functions ---
+        function startRecording() { try { recognition.start(); } catch(e) { console.error(e); } }
+        function stopRecording() { try { recognition.stop(); } catch(e) { console.error(e); } }
+
+        async function startAudioRecorder() {
+            audioChunks = [];
+            try {
+                audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(audioStream);
+                mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    elements.userAudio.src = URL.createObjectURL(audioBlob);
+                    elements.audioPlayerContainer.classList.remove('hidden');
+                    audioStream.getTracks().forEach(track => track.stop());
+                };
+                mediaRecorder.start();
+            } catch (err) { console.error("Audio recording failed:", err); }
+        }
+
+        function stopAudioRecorder() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+        }
+
+        // --- Main Logic ---
         async function generateSentence() {
             if (isProcessing) return;
-            if (!apiKey) {
-                elements.apiKeyPanel.classList.remove('hidden');
-                alert('請先設定 API Key');
-                return;
-            }
+            if (!apiKey) { elements.apiKeyPanel.classList.remove('hidden'); return; }
             
             isProcessing = true;
             elements.generateBtn.disabled = true;
             elements.contentArea.innerHTML = '<div class="loading-dots text-slate-500">教練出題中</div>';
+            elements.drillSection.classList.add('hidden');
+            elements.learningSection.classList.add('hidden');
             elements.feedbackSection.classList.add('hidden');
             elements.generateBtn.classList.remove('ring-2', 'ring-blue-400', 'ring-offset-2', 'ring-offset-slate-900');
 
+            const level = elements.levelSelect.value;
+            let focusPrompt = "";
+            
+            if (level === 'L1') focusPrompt = "Focus: Phonetic Coding. Generate short sentences packed with Linking (Consonant+Vowel) and Flap T.";
+            else if (level === 'L2') focusPrompt = "Focus: Rhythm. Generate sentences where stress is crucial.";
+            else if (level === 'L3') focusPrompt = "Focus: Shadowing. Generate longer Part 3 style sentences.";
+            else if (level === 'L4') focusPrompt = "Focus: Speed. Generate complex sentences.";
+
             const prompt = `
-                Act as a TOEIC coach. Level: ${elements.levelSelect.value}.
-                Task: Generate a business sentence. 
-                Constraint: 50% chance to use "It" as a dummy subject (e.g., "It is crucial to...").
+                Role: TOEIC Pronunciation Coach for Experts (Doctoral level).
+                ${focusPrompt}
+                Task: Generate a business English sentence.
+                Constraint: 50% chance to use "It" as a dummy subject.
                 
                 Return JSON only:
                 {
                     "sentence": "English sentence",
-                    "ipa": "IPA transcription",
+                    "ipa": "IPA with linking markers",
                     "translation": "TC translation",
                     "tips": "Brief linking tip",
-                    "grammar": "Brief grammar breakdown (TC)"
+                    "grammar": "Brief syntax analysis (TC)",
+                    "exam_point": "Key TOEIC exam point (TC)",
+                    "drills": [
+                        {"text": "segment", "ipa": "IPA", "visual": "visual-guide (e.g. che-ki-tout)"},
+                        {"text": "segment2", "ipa": "IPA", "visual": "visual-guide"}
+                    ]
                 }
+                * drills: Select 2-3 difficult linking clusters from the sentence for independent practice.
             `;
 
             try {
                 const res = await callGemini(prompt, true);
                 const data = JSON.parse(res);
                 currentSentence = data.sentence;
+                
+                // Update Sentence
                 elements.contentArea.innerHTML = `
                     <h2 class="text-xl md:text-2xl font-bold leading-snug break-words">${data.sentence}</h2>
-                    <p class="ipa-text text-sm mt-3 tracking-wide">${data.ipa}</p>
-                    <div class="h-px w-8 bg-slate-700 mx-auto my-3"></div>
-                    <p class="text-slate-400 text-xs">${data.translation}</p>
+                    <p class="ipa-text text-sm mt-2 tracking-wide">${data.ipa}</p>
                     <p class="text-blue-400 text-[10px] mt-2 inline-block border border-blue-900/50 px-2 py-1 rounded bg-blue-900/10">${data.tips}</p>
+                    <div class="mt-4 p-3 bg-slate-800 rounded-lg border border-slate-700">
+                        <p class="text-slate-300 text-sm font-medium">翻譯：${data.translation}</p>
+                    </div>
                 `;
-                elements.grammarNote.innerHTML = data.grammar.split('\n').map(l => `<p>${l}</p>`).join('');
+
+                // Render Drills
+                if (data.drills && data.drills.length > 0) {
+                    elements.drillContainer.innerHTML = data.drills.map(d => `
+                        <button onclick="speak('${d.text}')" class="bg-slate-700 hover:bg-slate-600 active:bg-blue-600 border border-slate-600 rounded-lg px-3 py-2 flex flex-col items-center min-w-[80px] transition group">
+                            <span class="text-xs text-slate-300 group-hover:text-white mb-1">${d.text}</span>
+                            <span class="text-[10px] text-blue-400 font-mono tracking-tighter">${d.visual}</span>
+                            <i class="fas fa-volume-up text-[10px] text-slate-500 mt-1"></i>
+                        </button>
+                    `).join('');
+                    elements.drillSection.classList.remove('hidden');
+                }
+
+                // Update Learning Section
+                elements.examPointDisplay.textContent = data.exam_point || "無考點資料";
+                elements.grammarNote.innerHTML = data.grammar ? data.grammar.split('\n').map(l => `<p>${l}</p>`).join('') : "無文法資料";
+                
+                elements.learningSection.classList.remove('hidden');
                 elements.actionButtons.classList.remove('opacity-50', 'pointer-events-none');
             } catch (e) {
                 elements.contentArea.innerHTML = `<p class="text-red-400 text-xs">${e.message}</p>`;
@@ -358,19 +481,40 @@
         }
 
         async function analyzePronunciation(text) {
-            elements.geminiAnalysis.innerHTML = '<div class="loading-dots">分析中</div>';
+            elements.geminiAnalysis.innerHTML = '<div class="loading-dots">語音手術進行中</div>';
+            
             const prompt = `
-                Target: "${currentSentence}". User said: "${text}".
-                Compare strict phonetics. Use TC.
-                Return JSON: {"score": 0-100, "comment": "Advice"}
+                Role: Strict TOEIC Coach.
+                Target: "${currentSentence}".
+                User: "${text}".
+                Criteria: Accuracy (40%), Fluency (30%), Completeness (30%).
+                Return JSON ONLY:
+                {
+                    "score": 0-100,
+                    "breakdown": {"accuracy": "0-100", "fluency": "0-100"},
+                    "weakness": ["List specific missing links", "Intonation errors"],
+                    "comment": "Strict feedback in TC."
+                }
             `;
+            
             try {
                 const res = await callGemini(prompt, true);
                 const data = JSON.parse(res);
+                
                 elements.scoreDisplay.textContent = data.score;
+                elements.accuracyScore.textContent = data.breakdown?.accuracy || '--';
+                elements.fluencyScore.textContent = data.breakdown?.fluency || '--';
+                
+                if (data.weakness && data.weakness.length > 0) {
+                    elements.weaknessList.innerHTML = data.weakness.map(w => `<li class="text-red-300">${w}</li>`).join('');
+                } else {
+                    elements.weaknessList.innerHTML = '<li class="text-green-400">Perfect! 連音與節奏完美。</li>';
+                }
                 elements.geminiAnalysis.innerHTML = data.comment;
-            } catch (e) {
-                elements.geminiAnalysis.textContent = "分析失敗，請重試";
+                
+            } catch (e) { 
+                elements.geminiAnalysis.textContent = "分析失敗，請重試"; 
+                console.error(e);
             }
         }
 
@@ -384,7 +528,6 @@
             };
 
             const res = await fetch(url, { method: 'POST', body: JSON.stringify(body) });
-            
             if (!res.ok) {
                 if (res.status === 429 && retry < 2) {
                     await new Promise(r => setTimeout(r, 2000));
@@ -397,37 +540,17 @@
             return data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
         }
 
-        // --- Mobile TTS Fix ---
         function speak(text) {
             if (!text) return;
-            
-            // 1. Cancel previous
             window.speechSynthesis.cancel();
-
-            // 2. Create utterance globally to avoid GC
             currentUtterance = new SpeechSynthesisUtterance(text);
             currentUtterance.lang = 'en-US';
             currentUtterance.rate = parseFloat(elements.rateInput.value) || 1;
-            currentUtterance.volume = 1.0;
-
-            // 3. Smart Voice Selection (iOS/Android Compat)
             if (availableVoices.length === 0) populateVoices();
-            const preferredVoice = availableVoices.find(v => v.name === 'Google US English') || 
-                                   availableVoices.find(v => v.name === 'Samantha') ||
-                                   availableVoices.find(v => v.lang === 'en-US');
+            const preferredVoice = availableVoices.find(v => v.name === 'Google US English') || availableVoices.find(v => v.lang === 'en-US');
             if (preferredVoice) currentUtterance.voice = preferredVoice;
-
-            // 4. UI Feedback
             elements.speakerIcon.classList.add('animate-ping');
-            currentUtterance.onend = () => {
-                elements.speakerIcon.classList.remove('animate-ping');
-            };
-            currentUtterance.onerror = (e) => {
-                console.error("TTS Error:", e);
-                elements.speakerIcon.classList.remove('animate-ping');
-            };
-
-            // 5. Speak
+            currentUtterance.onend = () => elements.speakerIcon.classList.remove('animate-ping');
             window.speechSynthesis.speak(currentUtterance);
         }
     </script>
