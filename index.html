@@ -22,7 +22,6 @@
         body { 
             font-family: 'Inter', 'Noto Sans TC', sans-serif; 
             -webkit-tap-highlight-color: transparent;
-            /* 使用 dvh (Dynamic Viewport Height) 解決 Safari 底部工具列遮擋問題 */
             min-height: 100dvh; 
             padding-top: env(safe-area-inset-top);
             padding-bottom: env(safe-area-inset-bottom);
@@ -98,7 +97,7 @@
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <button id="ttsBtn" class="bg-slate-700 active:bg-slate-600 text-white py-4 rounded-xl flex flex-col items-center justify-center gap-1 transition touch-manipulation">
-                        <i class="fas fa-volume-up text-xl"></i><span class="text-xs">播放範例</span>
+                        <i id="speakerIcon" class="fas fa-volume-up text-xl"></i><span id="ttsText" class="text-xs">播放範例</span>
                     </button>
                     <!-- Improved Record Button visual feedback -->
                     <button id="recordBtn" class="bg-red-600/20 active:bg-red-600/30 text-red-400 border border-red-600/50 py-4 rounded-xl flex flex-col items-center justify-center gap-1 transition touch-manipulation">
@@ -136,12 +135,18 @@
     <script>
         // Init logic
         let apiKey = localStorage.getItem('gemini_api_key') || '';
+        const LEAKED_KEY_PREFIX = 'AIzaSyCvFOB';
+        
         let currentSentence = '';
         let isRecording = false;
         let isProcessing = false;
         let recognition = null;
         let finalTranscript = '';
         let wakeLock = null;
+        
+        // Mobile TTS Fix: Global variable to prevent garbage collection
+        let currentUtterance = null;
+        let availableVoices = [];
 
         const elements = {
             configBtn: document.getElementById('configBtn'),
@@ -156,6 +161,8 @@
             rateInput: document.getElementById('rateInput'),
             rateValue: document.getElementById('rateValue'),
             ttsBtn: document.getElementById('ttsBtn'),
+            speakerIcon: document.getElementById('speakerIcon'),
+            ttsText: document.getElementById('ttsText'),
             recordBtn: document.getElementById('recordBtn'),
             recordText: document.getElementById('recordText'),
             micIcon: document.getElementById('micIcon'),
@@ -167,22 +174,39 @@
             levelSelect: document.getElementById('levelSelect')
         };
 
-        // HTTPS Check
-        if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-            document.getElementById('httpsWarning').classList.remove('hidden');
+        // --- Voices Loader (Essential for Mobile) ---
+        function populateVoices() {
+            availableVoices = window.speechSynthesis.getVoices();
+        }
+        populateVoices();
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+            window.speechSynthesis.onvoiceschanged = populateVoices;
         }
 
-        // Key Check
-        if (apiKey) {
-            elements.apiKeyInput.value = apiKey;
-            elements.contentArea.innerHTML = `
-                <div class="text-slate-500 text-sm italic animate-pulse">
-                    <i class="fas fa-check-circle text-green-500 mr-2"></i>API Key 已就緒
-                </div>
-            `;
-            elements.generateBtn.classList.add('ring-2', 'ring-blue-400', 'ring-offset-2', 'ring-offset-slate-900');
-        } else {
-            elements.apiKeyPanel.classList.remove('hidden');
+        // --- Init Checks ---
+        function checkAndInitKey() {
+            if (apiKey && apiKey.startsWith(LEAKED_KEY_PREFIX)) {
+                localStorage.removeItem('gemini_api_key');
+                apiKey = '';
+                alert("測試 Key 已過期，請設定您自己的 API Key。");
+            }
+
+            if (apiKey) {
+                elements.apiKeyInput.value = apiKey;
+                elements.contentArea.innerHTML = `
+                    <div class="text-slate-500 text-sm italic animate-pulse">
+                        <i class="fas fa-check-circle text-green-500 mr-2"></i>API Key 已就緒
+                    </div>
+                `;
+                elements.generateBtn.classList.add('ring-2', 'ring-blue-400', 'ring-offset-2', 'ring-offset-slate-900');
+            } else {
+                elements.apiKeyPanel.classList.remove('hidden');
+            }
+        }
+        checkAndInitKey();
+
+        if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+            document.getElementById('httpsWarning').classList.remove('hidden');
         }
 
         // --- Event Listeners ---
@@ -191,11 +215,14 @@
         elements.saveKeyBtn.addEventListener('click', () => {
             const inputVal = elements.apiKeyInput.value.trim();
             if (inputVal) {
+                if (inputVal.startsWith(LEAKED_KEY_PREFIX)) {
+                    alert("此 Key 已失效，請使用您自己的 Key。");
+                    return;
+                }
                 apiKey = inputVal;
                 localStorage.setItem('gemini_api_key', apiKey);
                 elements.apiKeyPanel.classList.add('hidden');
-                elements.contentArea.innerHTML = '<p class="text-green-400 text-sm"><i class="fas fa-check mr-1"></i>設定完成，請出題</p>';
-                elements.generateBtn.classList.add('ring-2', 'ring-blue-400', 'ring-offset-2', 'ring-offset-slate-900');
+                checkAndInitKey();
             } else {
                 alert('請輸入 API Key');
             }
@@ -205,7 +232,7 @@
         elements.generateBtn.addEventListener('click', generateSentence);
         elements.ttsBtn.addEventListener('click', () => speak(currentSentence));
 
-        // --- Wake Lock (Keep Screen On) ---
+        // --- Wake Lock ---
         elements.wakeLockBtn.addEventListener('click', async () => {
             if ('wakeLock' in navigator) {
                 try {
@@ -213,11 +240,9 @@
                     elements.wakeLockBtn.classList.remove('text-slate-500');
                     elements.wakeLockBtn.classList.add('text-yellow-400');
                     alert("螢幕常亮模式：已開啟");
-                } catch (err) {
-                    console.error(`${err.name}, ${err.message}`);
-                }
+                } catch (err) { console.error(err); }
             } else {
-                alert("您的瀏覽器不支援螢幕常亮功能");
+                alert("瀏覽器不支援此功能");
             }
         });
 
@@ -239,7 +264,6 @@
                 elements.recordText.textContent = '停止並分析';
                 elements.feedbackSection.classList.remove('hidden');
                 elements.userSaidDisplay.textContent = '...';
-                // Scroll to bottom
                 elements.feedbackSection.scrollIntoView({ behavior: 'smooth' });
             };
 
@@ -278,8 +302,8 @@
             });
         } else {
             elements.recordBtn.disabled = true;
-            elements.recordText.textContent = '不支援此瀏覽器';
-            alert("iOS 請使用 Safari，Android 請使用 Chrome");
+            elements.recordText.textContent = '不支援';
+            alert("iOS 請用 Safari，Android 請用 Chrome");
         }
 
         // --- Core Functions ---
@@ -297,7 +321,6 @@
             elements.feedbackSection.classList.add('hidden');
             elements.generateBtn.classList.remove('ring-2', 'ring-blue-400', 'ring-offset-2', 'ring-offset-slate-900');
 
-            // Force "It" dummy subject for TOEIC 750 goal
             const prompt = `
                 Act as a TOEIC coach. Level: ${elements.levelSelect.value}.
                 Task: Generate a business sentence. 
@@ -374,12 +397,38 @@
             return data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
         }
 
+        // --- Mobile TTS Fix ---
         function speak(text) {
+            if (!text) return;
+            
+            // 1. Cancel previous
             window.speechSynthesis.cancel();
-            const u = new SpeechSynthesisUtterance(text);
-            u.lang = 'en-US';
-            u.rate = parseFloat(elements.rateInput.value);
-            window.speechSynthesis.speak(u);
+
+            // 2. Create utterance globally to avoid GC
+            currentUtterance = new SpeechSynthesisUtterance(text);
+            currentUtterance.lang = 'en-US';
+            currentUtterance.rate = parseFloat(elements.rateInput.value) || 1;
+            currentUtterance.volume = 1.0;
+
+            // 3. Smart Voice Selection (iOS/Android Compat)
+            if (availableVoices.length === 0) populateVoices();
+            const preferredVoice = availableVoices.find(v => v.name === 'Google US English') || 
+                                   availableVoices.find(v => v.name === 'Samantha') ||
+                                   availableVoices.find(v => v.lang === 'en-US');
+            if (preferredVoice) currentUtterance.voice = preferredVoice;
+
+            // 4. UI Feedback
+            elements.speakerIcon.classList.add('animate-ping');
+            currentUtterance.onend = () => {
+                elements.speakerIcon.classList.remove('animate-ping');
+            };
+            currentUtterance.onerror = (e) => {
+                console.error("TTS Error:", e);
+                elements.speakerIcon.classList.remove('animate-ping');
+            };
+
+            // 5. Speak
+            window.speechSynthesis.speak(currentUtterance);
         }
     </script>
 </body>
