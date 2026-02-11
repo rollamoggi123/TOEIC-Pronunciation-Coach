@@ -2,61 +2,89 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>TOEIC 750+ 聽力反射教練</title>
-    <!-- PWA Manifest Data URL (保持 UI 顯示) -->
-    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlRPRUlDIDc1MCsgUmVmbGV4IiwKICAic2hvcnRfbmFtZSI6ICJUT0VJQyBSZWZsZXgiLAogICJzdGFydF91cmwiOiAiLiIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiIzBmMTczYSIsCiAgInRoZW1lX2NvbG9yIjogIiMwZjE3M2EiCn0=">
+    
+    <!-- PWA Icon & Manifest (Base64 Embedded for Single File Portability) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎧</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%230f172a%22/><text x=%2250%22 y=%2250%22 dominant-baseline=%22central%22 text-anchor=%22middle%22 font-size=%2270%22>🎧</text></svg>">
+    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlRPRUlDIDc1MCsgQ29hY2giLAogICJzaG9ydF9uYW1lIjogIlRPRUlDIFJlZmxleCIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMGYxNzNhIiwKICAidGhlbWVfY29sb3IiOiAiIzBmMTczYSIsCiAgImljb25zIjogW3sKICAgICJzcmMiOiAiZGF0YTppbWFnZS9zdmcreG1sOzY0LDxzdmcgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJyB2aWV3Qm94PScwIDAgMTAwIDEwMCc+PHRleHQgeT0nLjllbScgZm9udC1zaXplPSc5MCc+8J+OpywvdGV4dD48L3N2Zz4iLAogICAgInNpemVzIjogIjE5MngxOTIiLAogICAgInR5cGUiOiAiaW1hZ2Uvc3ZnK3htbCIKICB9XQp9">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
-        body { font-family: 'Inter', 'Noto Sans TC', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        /* Mobile Viewport Fixes */
+        body { 
+            font-family: 'Inter', 'Noto Sans TC', sans-serif; 
+            -webkit-tap-highlight-color: transparent;
+            /* 使用 dvh (Dynamic Viewport Height) 解決 Safari 底部工具列遮擋問題 */
+            min-height: 100dvh; 
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        
         .gradient-text { background: linear-gradient(to right, #4ade80, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .ipa-text { font-family: 'Arial', sans-serif; color: #94a3b8; }
         .loading-dots:after { content: '.'; animation: dots 1.5s steps(5, end) infinite; }
         @keyframes dots { 0%, 20% { content: '.'; } 40% { content: '..'; } 60% { content: '...'; } 80%, 100% { content: ''; } }
         
+        /* Slider Styling */
         input[type=range] { -webkit-appearance: none; background: transparent; }
         input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 6px; cursor: pointer; background: #334155; border-radius: 99px; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%; background: #3b82f6; cursor: pointer; margin-top: -7px; border: 2px solid #1e293b; }
     </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center p-4">
+<body class="bg-slate-900 text-slate-100 flex flex-col items-center p-4">
 
-    <header class="w-full max-w-2xl mt-4 mb-6 flex justify-between items-center">
+    <header class="w-full max-w-2xl mt-2 mb-4 flex justify-between items-center">
         <div>
-            <h1 class="text-xl font-bold">TOEIC <span class="gradient-text">Reflex Coach</span></h1>
-            <p class="text-slate-400 text-xs">一年挑戰 750 分計畫</p>
+            <h1 class="text-xl font-bold">TOEIC <span class="gradient-text">Reflex</span></h1>
+            <p class="text-slate-400 text-[10px]">AI 聽力反射教練</p>
         </div>
-        <button id="configBtn" class="text-slate-400 hover:text-white p-2"><i class="fas fa-cog fa-lg"></i></button>
+        <div class="flex gap-2">
+            <button id="wakeLockBtn" class="text-slate-500 hover:text-yellow-400 p-2 transition" title="保持螢幕常亮"><i class="fas fa-lightbulb"></i></button>
+            <button id="configBtn" class="text-slate-400 hover:text-white p-2"><i class="fas fa-cog fa-lg"></i></button>
+        </div>
     </header>
 
-    <div id="apiKeyPanel" class="hidden w-full max-w-2xl bg-slate-800 border border-slate-700 p-4 rounded-xl mb-4 shadow-xl animate-fade-in">
-        <label class="block text-xs text-slate-400 mb-2">Gemini API Key <span class="text-red-400">(請輸入您自己的 Key)</span></label>
+    <div id="apiKeyPanel" class="hidden w-full max-w-2xl bg-slate-800 border border-slate-700 p-4 rounded-xl mb-4 shadow-xl animate-fade-in z-50">
+        <label class="block text-xs text-slate-400 mb-2">Gemini API Key <span class="text-red-400">(必填)</span></label>
         <input type="password" id="apiKeyInput" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" placeholder="Paste key here...">
         <div class="text-[10px] text-slate-500 mt-1">
-            * 公用 Key 額度已滿，請至 <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-blue-400 underline">Google AI Studio</a> 免費申請。
+            * 請至 <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-blue-400 underline">Google AI Studio</a> 申請。Key 僅儲存於您的手機端。
         </div>
-        <button id="saveKeyBtn" class="mt-3 w-full bg-blue-600 hover:bg-blue-500 text-sm font-bold py-2 rounded-lg transition">儲存並開始</button>
+        <button id="saveKeyBtn" class="mt-3 w-full bg-blue-600 hover:bg-blue-500 text-sm font-bold py-2 rounded-lg transition">儲存設定</button>
     </div>
 
-    <main class="w-full max-w-2xl space-y-4">
+    <main class="w-full max-w-2xl space-y-4 flex-1">
+        
+        <!-- HTTPS Warning -->
+        <div id="httpsWarning" class="hidden bg-yellow-500/20 border border-yellow-500/50 text-yellow-200 p-4 rounded-xl text-sm">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            <strong>部署錯誤：</strong> 請使用 Vercel 或 Netlify 等支援 HTTPS 的平台。
+        </div>
+
         <!-- Dashboard -->
-        <div class="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-2xl p-6 shadow-2xl">
-            <div class="flex gap-2 mb-6">
-                <select id="levelSelect" class="bg-slate-900 border border-slate-700 text-sm rounded-lg px-3 py-2 outline-none">
+        <div class="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-2xl p-5 shadow-2xl">
+            <div class="flex gap-2 mb-4">
+                <select id="levelSelect" class="bg-slate-900 border border-slate-700 text-sm rounded-lg px-2 py-2 outline-none w-full truncate">
                     <option value="L1">L1: 語音拆解 (基礎)</option>
                     <option value="L2">L2: 關鍵字導航</option>
                     <option value="L3">L3: 商務場景</option>
                     <option value="L4">L4: 極限語速</option>
                 </select>
-                <button id="generateBtn" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-lg transition flex justify-center items-center gap-2">
-                    <i class="fas fa-magic"></i> <span id="genBtnText">下一題</span>
+                <button id="generateBtn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2 rounded-lg transition whitespace-nowrap flex items-center gap-2 shadow-lg shadow-blue-900/20">
+                    <i class="fas fa-magic"></i><span>出題</span>
                 </button>
             </div>
 
             <div id="contentArea" class="min-h-[140px] flex flex-col justify-center items-center text-center space-y-4">
-                <p class="text-slate-500 text-sm italic">請設定 Key 後點擊「下一題」</p>
+                <p class="text-slate-500 text-sm italic">輸入 Key 後點擊「出題」開始</p>
             </div>
         </div>
 
@@ -64,36 +92,40 @@
         <div id="actionButtons" class="grid grid-cols-1 gap-4 opacity-50 pointer-events-none transition-opacity">
             <div class="bg-slate-800/50 border border-slate-700 rounded-2xl p-4 space-y-4">
                 <div class="flex items-center gap-3">
-                    <span class="text-xs text-slate-400 font-medium whitespace-nowrap"><i class="fas fa-tachometer-alt mr-1"></i>語速</span>
+                    <span class="text-xs text-slate-400 font-medium whitespace-nowrap"><i class="fas fa-tachometer-alt mr-1"></i></span>
                     <input type="range" id="rateInput" min="0.5" max="1.5" step="0.1" value="1" class="w-full">
-                    <span id="rateValue" class="text-xs text-blue-400 font-mono w-10 text-right">1.0x</span>
+                    <span id="rateValue" class="text-xs text-blue-400 font-mono w-8 text-right">1.0x</span>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
-                    <button id="ttsBtn" class="bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl flex items-center justify-center gap-2 transition">
-                        <i class="fas fa-volume-up"></i><span>範例</span>
+                    <button id="ttsBtn" class="bg-slate-700 active:bg-slate-600 text-white py-4 rounded-xl flex flex-col items-center justify-center gap-1 transition touch-manipulation">
+                        <i class="fas fa-volume-up text-xl"></i><span class="text-xs">播放範例</span>
                     </button>
-                    <button id="recordBtn" class="bg-red-600/20 hover:bg-red-600 hover:text-white border border-red-600/50 text-red-400 py-3 rounded-xl flex items-center justify-center gap-2 transition">
-                        <i id="micIcon" class="fas fa-microphone"></i><span id="recordText">錄音</span>
+                    <!-- Improved Record Button visual feedback -->
+                    <button id="recordBtn" class="bg-red-600/20 active:bg-red-600/30 text-red-400 border border-red-600/50 py-4 rounded-xl flex flex-col items-center justify-center gap-1 transition touch-manipulation">
+                        <i id="micIcon" class="fas fa-microphone text-xl"></i><span id="recordText" class="text-xs">點擊錄音</span>
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Feedback & Grammar -->
-        <div id="feedbackSection" class="hidden space-y-4 animate-fade-in pb-10">
+        <!-- Feedback -->
+        <div id="feedbackSection" class="hidden space-y-4 animate-fade-in pb-8">
             <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-lg">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-bold text-slate-200">教練評分</h3>
-                    <div id="scoreDisplay" class="text-4xl font-black gradient-text">--</div>
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-bold text-slate-200 text-sm">教練評分</h3>
+                    <div id="scoreDisplay" class="text-3xl font-black gradient-text">--</div>
                 </div>
                 <div class="space-y-3">
-                    <p id="userSaidDisplay" class="text-red-400 text-sm italic bg-slate-900 p-3 rounded-lg border border-slate-800"></p>
+                    <div class="bg-slate-900 p-3 rounded-lg border border-slate-800">
+                        <p class="text-xs text-slate-500 mb-1">你說的是：</p>
+                        <p id="userSaidDisplay" class="text-red-400 text-sm italic min-h-[1.2em]"></p>
+                    </div>
                     <div id="geminiAnalysis" class="text-slate-300 text-sm leading-relaxed"></div>
                 </div>
             </div>
 
             <div id="grammarSection" class="bg-blue-900/10 border border-blue-800/50 rounded-2xl p-5">
-                <h3 class="text-blue-400 font-bold mb-3 flex items-center gap-2">
+                <h3 class="text-blue-400 font-bold mb-2 flex items-center gap-2 text-sm">
                     <i class="fas fa-book-open"></i>多益 750 文法拆解
                 </h3>
                 <div id="grammarNote" class="text-slate-300 text-sm space-y-2"></div>
@@ -102,19 +134,18 @@
     </main>
 
     <script>
+        // Init logic
         let apiKey = localStorage.getItem('gemini_api_key') || '';
-        const LEAKED_KEY_PREFIX = 'AIzaSyCvFOB'; // 檢測已知失效的 Key 前綴
-
-        // 狀態管理
         let currentSentence = '';
         let isRecording = false;
         let isProcessing = false;
         let recognition = null;
         let finalTranscript = '';
-        let currentModel = 'gemini-1.5-flash'; // 預設優先使用穩定版
+        let wakeLock = null;
 
         const elements = {
             configBtn: document.getElementById('configBtn'),
+            wakeLockBtn: document.getElementById('wakeLockBtn'),
             apiKeyPanel: document.getElementById('apiKeyPanel'),
             apiKeyInput: document.getElementById('apiKeyInput'),
             saveKeyBtn: document.getElementById('saveKeyBtn'),
@@ -136,42 +167,35 @@
             levelSelect: document.getElementById('levelSelect')
         };
 
-        // --- 強制清除失效 Key 並初始化 ---
-        function checkAndInitKey() {
-            if (apiKey && apiKey.startsWith(LEAKED_KEY_PREFIX)) {
-                localStorage.removeItem('gemini_api_key');
-                apiKey = '';
-                alert("系統偵測到您使用的是額度已滿的公用 Key。請重新輸入您自己的 API Key。");
-            }
-
-            if (apiKey) {
-                elements.apiKeyInput.value = apiKey;
-                elements.contentArea.innerHTML = `
-                    <div class="text-slate-500 text-sm italic animate-pulse">
-                        <i class="fas fa-check-circle text-green-500 mr-2"></i>API Key 已就緒，請點擊「下一題」
-                    </div>
-                `;
-                elements.generateBtn.classList.add('ring-2', 'ring-blue-400', 'ring-offset-2', 'ring-offset-slate-900');
-            } else {
-                elements.apiKeyPanel.classList.remove('hidden');
-                elements.contentArea.innerHTML = '<p class="text-slate-500 text-sm italic">請設定 API Key 以開始訓練</p>';
-            }
+        // HTTPS Check
+        if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+            document.getElementById('httpsWarning').classList.remove('hidden');
         }
-        checkAndInitKey();
 
+        // Key Check
+        if (apiKey) {
+            elements.apiKeyInput.value = apiKey;
+            elements.contentArea.innerHTML = `
+                <div class="text-slate-500 text-sm italic animate-pulse">
+                    <i class="fas fa-check-circle text-green-500 mr-2"></i>API Key 已就緒
+                </div>
+            `;
+            elements.generateBtn.classList.add('ring-2', 'ring-blue-400', 'ring-offset-2', 'ring-offset-slate-900');
+        } else {
+            elements.apiKeyPanel.classList.remove('hidden');
+        }
+
+        // --- Event Listeners ---
         elements.configBtn.addEventListener('click', () => elements.apiKeyPanel.classList.toggle('hidden'));
         
         elements.saveKeyBtn.addEventListener('click', () => {
             const inputVal = elements.apiKeyInput.value.trim();
             if (inputVal) {
-                if (inputVal.startsWith(LEAKED_KEY_PREFIX)) {
-                    alert("這組 Key 已經失效了，請使用您自己申請的 Key。");
-                    return;
-                }
                 apiKey = inputVal;
                 localStorage.setItem('gemini_api_key', apiKey);
                 elements.apiKeyPanel.classList.add('hidden');
-                checkAndInitKey();
+                elements.contentArea.innerHTML = '<p class="text-green-400 text-sm"><i class="fas fa-check mr-1"></i>設定完成，請出題</p>';
+                elements.generateBtn.classList.add('ring-2', 'ring-blue-400', 'ring-offset-2', 'ring-offset-slate-900');
             } else {
                 alert('請輸入 API Key');
             }
@@ -181,31 +205,53 @@
         elements.generateBtn.addEventListener('click', generateSentence);
         elements.ttsBtn.addEventListener('click', () => speak(currentSentence));
 
-        // --- 語音辨識設定 ---
-        if ('webkitSpeechRecognition' in window) {
-            recognition = new webkitSpeechRecognition();
+        // --- Wake Lock (Keep Screen On) ---
+        elements.wakeLockBtn.addEventListener('click', async () => {
+            if ('wakeLock' in navigator) {
+                try {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    elements.wakeLockBtn.classList.remove('text-slate-500');
+                    elements.wakeLockBtn.classList.add('text-yellow-400');
+                    alert("螢幕常亮模式：已開啟");
+                } catch (err) {
+                    console.error(`${err.name}, ${err.message}`);
+                }
+            } else {
+                alert("您的瀏覽器不支援螢幕常亮功能");
+            }
+        });
+
+        // --- Speech Recognition ---
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
             recognition.lang = 'en-US';
             recognition.continuous = true;
             recognition.interimResults = true;
+            recognition.maxAlternatives = 1;
 
             recognition.onstart = () => {
                 isRecording = true;
                 finalTranscript = '';
-                elements.recordBtn.classList.replace('bg-red-600/20', 'bg-red-600');
-                elements.recordBtn.classList.replace('text-red-400', 'text-white');
+                elements.recordBtn.className = "bg-red-600 text-white border border-red-600 py-4 rounded-xl flex flex-col items-center justify-center gap-1 transition touch-manipulation shadow-lg shadow-red-900/50";
                 elements.micIcon.classList.add('animate-pulse');
-                elements.recordText.textContent = '停止';
+                elements.recordText.textContent = '停止並分析';
                 elements.feedbackSection.classList.remove('hidden');
-                elements.userSaidDisplay.textContent = '聆聽中...';
+                elements.userSaidDisplay.textContent = '...';
+                // Scroll to bottom
+                elements.feedbackSection.scrollIntoView({ behavior: 'smooth' });
             };
 
             recognition.onend = () => {
                 isRecording = false;
-                elements.recordBtn.classList.replace('bg-red-600', 'bg-red-600/20');
-                elements.recordBtn.classList.replace('text-white', 'text-red-400');
+                elements.recordBtn.className = "bg-red-600/20 active:bg-red-600/30 text-red-400 border border-red-600/50 py-4 rounded-xl flex flex-col items-center justify-center gap-1 transition touch-manipulation";
                 elements.micIcon.classList.remove('animate-pulse');
-                elements.recordText.textContent = '錄音';
-                if (finalTranscript) analyzePronunciation(finalTranscript);
+                elements.recordText.textContent = '點擊錄音';
+                
+                if (finalTranscript.trim().length > 0) {
+                    analyzePronunciation(finalTranscript);
+                }
             };
 
             recognition.onresult = (event) => {
@@ -214,18 +260,34 @@
                     if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript;
                     else interim += event.results[i][0].transcript;
                 }
-                elements.userSaidDisplay.textContent = finalTranscript + interim;
+                elements.userSaidDisplay.innerHTML = `<span class="text-white">${finalTranscript}</span><span class="text-slate-500">${interim}</span>`;
             };
 
-            elements.recordBtn.addEventListener('click', () => isRecording ? recognition.stop() : recognition.start());
+            recognition.onerror = (event) => {
+                console.error(event.error);
+                if(isRecording && event.error !== 'no-speech') recognition.stop();
+                if(event.error === 'not-allowed') alert("請允許麥克風權限");
+            };
+
+            elements.recordBtn.addEventListener('click', () => {
+                if (isRecording) {
+                    recognition.stop();
+                } else {
+                    try { recognition.start(); } catch(e) { console.error(e); }
+                }
+            });
+        } else {
+            elements.recordBtn.disabled = true;
+            elements.recordText.textContent = '不支援此瀏覽器';
+            alert("iOS 請使用 Safari，Android 請使用 Chrome");
         }
 
-        // --- 核心功能 ---
+        // --- Core Functions ---
         async function generateSentence() {
             if (isProcessing) return;
             if (!apiKey) {
                 elements.apiKeyPanel.classList.remove('hidden');
-                alert('請先設定您的 API Key');
+                alert('請先設定 API Key');
                 return;
             }
             
@@ -235,18 +297,19 @@
             elements.feedbackSection.classList.add('hidden');
             elements.generateBtn.classList.remove('ring-2', 'ring-blue-400', 'ring-offset-2', 'ring-offset-slate-900');
 
+            // Force "It" dummy subject for TOEIC 750 goal
             const prompt = `
                 Act as a TOEIC coach. Level: ${elements.levelSelect.value}.
-                Priority: Generate a sentence using "It" as an empty subject (dummy subject) or formal subject.
-                Example: "It is important to submit the proposal by noon."
+                Task: Generate a business sentence. 
+                Constraint: 50% chance to use "It" as a dummy subject (e.g., "It is crucial to...").
                 
-                Return JSON:
+                Return JSON only:
                 {
                     "sentence": "English sentence",
-                    "ipa": "/.../",
-                    "translation": "繁體中文翻譯",
-                    "tips": "Pronunciation/Linking tips",
-                    "grammar": "Step-by-step breakdown of 'It' usage in this sentence in Traditional Chinese."
+                    "ipa": "IPA transcription",
+                    "translation": "TC translation",
+                    "tips": "Brief linking tip",
+                    "grammar": "Brief grammar breakdown (TC)"
                 }
             `;
 
@@ -255,21 +318,16 @@
                 const data = JSON.parse(res);
                 currentSentence = data.sentence;
                 elements.contentArea.innerHTML = `
-                    <h2 class="text-2xl font-bold leading-snug">${data.sentence}</h2>
-                    <p class="ipa-text text-sm mt-2">${data.ipa}</p>
-                    <p class="text-slate-400 text-xs mt-1">${data.translation}</p>
-                    <p class="text-blue-400 text-[10px] mt-2 border border-blue-900/50 px-2 py-1 rounded bg-blue-900/10">${data.tips}</p>
+                    <h2 class="text-xl md:text-2xl font-bold leading-snug break-words">${data.sentence}</h2>
+                    <p class="ipa-text text-sm mt-3 tracking-wide">${data.ipa}</p>
+                    <div class="h-px w-8 bg-slate-700 mx-auto my-3"></div>
+                    <p class="text-slate-400 text-xs">${data.translation}</p>
+                    <p class="text-blue-400 text-[10px] mt-2 inline-block border border-blue-900/50 px-2 py-1 rounded bg-blue-900/10">${data.tips}</p>
                 `;
                 elements.grammarNote.innerHTML = data.grammar.split('\n').map(l => `<p>${l}</p>`).join('');
                 elements.actionButtons.classList.remove('opacity-50', 'pointer-events-none');
             } catch (e) {
-                elements.contentArea.innerHTML = `
-                    <div class="text-red-400 p-3 bg-red-900/20 rounded border border-red-900/50">
-                        <p class="font-bold text-sm"><i class="fas fa-exclamation-triangle mr-2"></i>發生錯誤</p>
-                        <p class="text-xs mt-1">${e.message}</p>
-                        <button onclick="document.getElementById('configBtn').click()" class="text-blue-400 underline text-xs mt-2">檢查 API Key</button>
-                    </div>
-                `;
+                elements.contentArea.innerHTML = `<p class="text-red-400 text-xs">${e.message}</p>`;
             } finally {
                 elements.generateBtn.disabled = false;
                 isProcessing = false;
@@ -279,8 +337,8 @@
         async function analyzePronunciation(text) {
             elements.geminiAnalysis.innerHTML = '<div class="loading-dots">分析中</div>';
             const prompt = `
-                Coach mode. Target: "${currentSentence}". User said: "${text}".
-                Compare phonetically. Be strict. Use Traditional Chinese.
+                Target: "${currentSentence}". User said: "${text}".
+                Compare strict phonetics. Use TC.
                 Return JSON: {"score": 0-100, "comment": "Advice"}
             `;
             try {
@@ -289,54 +347,31 @@
                 elements.scoreDisplay.textContent = data.score;
                 elements.geminiAnalysis.innerHTML = data.comment;
             } catch (e) {
-                elements.geminiAnalysis.innerHTML = `<span class="text-red-400">分析失敗: ${e.message}</span>`;
+                elements.geminiAnalysis.textContent = "分析失敗，請重試";
             }
         }
 
-        // --- 智慧型 API 呼叫 (含模型自動切換) ---
-        async function callGemini(prompt, isJson, retryCount = 0) {
-            // 模型列表：優先嘗試穩定版，失敗則切換到預覽版
-            const models = ['gemini-1.5-flash', 'gemini-2.5-flash-preview-09-2025'];
-            
-            // 決定當前要嘗試哪個模型
-            // 如果 retryCount 超過模型數量，表示都試過了，回到第一個重試
-            const modelIndex = retryCount % models.length; 
-            const activeModel = models[modelIndex];
-            
-            console.log(`Trying model: ${activeModel} (Attempt ${retryCount + 1})`);
+        async function callGemini(prompt, isJson, retry = 0) {
+            const models = ['gemini-2.5-flash-preview-09-2025', 'gemini-1.5-flash'];
+            const model = models[retry % models.length];
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+            const body = { 
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: isJson ? { responseMimeType: "application/json" } : {}
+            };
 
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:generateContent?key=${apiKey}`;
-            const body = { contents: [{ parts: [{ text: prompt }] }] };
-            if (isJson) body.generationConfig = { responseMimeType: "application/json" };
-            
             const res = await fetch(url, { method: 'POST', body: JSON.stringify(body) });
             
             if (!res.ok) {
-                // 處理 Rate Limit (429) -> 等待後重試
-                if (res.status === 429) {
-                    if (retryCount < 3) {
-                        console.warn("Rate limit hit, waiting...");
-                        await new Promise(r => setTimeout(r, 2000 * (retryCount + 1)));
-                        return callGemini(prompt, isJson, retryCount + 1);
-                    }
-                    throw new Error("API 額度已滿，請確認您使用的是自己的 Key，並休息一下。");
+                if (res.status === 429 && retry < 2) {
+                    await new Promise(r => setTimeout(r, 2000));
+                    return callGemini(prompt, isJson, retry + 1);
                 }
-
-                // 處理 404 (模型找不到) -> 切換下一個模型
-                if (res.status === 404 && retryCount < models.length) {
-                    console.warn(`Model ${activeModel} not found, switching...`);
-                    return callGemini(prompt, isJson, retryCount + 1);
-                }
-
-                const errData = await res.json().catch(() => ({}));
-                throw new Error(errData.error?.message || `API Error: ${res.status}`);
+                const err = await res.json().catch(()=>({}));
+                throw new Error(err.error?.message || res.statusText);
             }
-
             const data = await res.json();
-            if (!data.candidates || data.candidates.length === 0) {
-                throw new Error("AI 回傳空內容");
-            }
-            return data.candidates[0].content.parts[0].text;
+            return data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
         }
 
         function speak(text) {
