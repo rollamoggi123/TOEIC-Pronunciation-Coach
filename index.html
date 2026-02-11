@@ -118,15 +118,13 @@
             </div>
         </div>
 
-        <!-- Drill Section (New Feature) -->
+        <!-- Drill Section -->
         <div id="drillSection" class="hidden animate-fade-in px-2">
             <div class="flex items-center gap-2 mb-2">
-                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">連音拆解特訓 (Linking Drills)</span>
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">連音拆解特訓</span>
                 <div class="h-px bg-slate-700 flex-1"></div>
             </div>
-            <div id="drillContainer" class="flex flex-wrap gap-2 justify-center">
-                <!-- Drill items will be injected here -->
-            </div>
+            <div id="drillContainer" class="flex flex-wrap gap-2 justify-center"></div>
         </div>
 
         <div id="actionButtons" class="grid grid-cols-1 gap-4 opacity-50 pointer-events-none transition-opacity">
@@ -196,12 +194,13 @@
 
                     <div id="geminiAnalysis" class="text-slate-300 text-sm leading-relaxed bg-slate-900/50 p-3 rounded-lg"></div>
 
+                    <!-- Audio Player -->
                     <div id="audioPlayerContainer" class="hidden bg-slate-900 p-3 rounded-lg border border-slate-800">
                         <p class="text-xs text-slate-500 mb-1 flex justify-between">
                             <span>我的錄音</span>
                             <span class="text-blue-400 text-[10px]">回放檢查</span>
                         </p>
-                        <audio id="userAudio" controls></audio>
+                        <audio id="userAudio" controls playsinline></audio>
                     </div>
 
                     <div class="bg-slate-900 p-3 rounded-lg border border-slate-800">
@@ -221,9 +220,13 @@
         let isRecording = false;
         let isProcessing = false;
         let recognition = null;
+        
+        // --- Improved Recording State ---
         let mediaRecorder = null;
         let audioChunks = [];
         let audioStream = null;
+        let finalTranscriptBuffer = ''; // Separate buffer for stability
+
         let currentUtterance = null;
         let availableVoices = [];
 
@@ -306,22 +309,89 @@
             }
         });
 
-        // --- Recording Setup ---
+        // --- Helper: Get Supported Mime Type for Mobile ---
+        const getMimeType = () => {
+            const types = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg'];
+            for (const type of types) {
+                if (MediaRecorder.isTypeSupported(type)) return type;
+            }
+            return ''; // Let browser use default
+        };
+
+        // --- Unified Recording Logic ---
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-        if (SpeechRecognition) {
-            recognition = new SpeechRecognition();
-            recognition.lang = 'en-US';
-            recognition.continuous = true;
-            recognition.interimResults = true;
-            recognition.maxAlternatives = 1;
+        // Toggle Recording
+        elements.recordBtn.addEventListener('click', async () => {
+            if (isRecording) {
+                stopAllRecording();
+            } else {
+                await startAllRecording();
+            }
+        });
 
-            recognition.onstart = () => {
+        async function startAllRecording() {
+            if (!SpeechRecognition) { alert("瀏覽器不支援語音辨識"); return; }
+
+            try {
+                // 1. Get Stream First (Permission Gesture)
+                audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                
+                // 2. Start Audio Recorder
+                audioChunks = [];
+                const options = { mimeType: getMimeType() };
+                try {
+                    mediaRecorder = new MediaRecorder(audioStream, options.mimeType ? options : undefined);
+                } catch(e) {
+                    mediaRecorder = new MediaRecorder(audioStream); // Fallback
+                }
+                
+                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
+                    elements.userAudio.src = URL.createObjectURL(blob);
+                    elements.audioPlayerContainer.classList.remove('hidden');
+                };
+                mediaRecorder.start();
+
+                // 3. Start Speech Recognition
+                recognition = new SpeechRecognition();
+                recognition.lang = 'en-US';
+                recognition.continuous = true;
+                recognition.interimResults = true;
+                recognition.maxAlternatives = 1;
+                finalTranscriptBuffer = ''; // Reset Buffer
+
+                recognition.onresult = (event) => {
+                    let interimStr = '';
+                    // Rebuild transcript from scratch to avoid duplication bug
+                    let fullFinal = '';
+                    
+                    for (let i = 0; i < event.results.length; ++i) {
+                        if (event.results[i].isFinal) {
+                            fullFinal += event.results[i][0].transcript;
+                        } else {
+                            interimStr += event.results[i][0].transcript;
+                        }
+                    }
+                    finalTranscriptBuffer = fullFinal; // Store reliable final
+                    elements.userSaidDisplay.innerHTML = `<span class="text-white">${fullFinal}</span><span class="text-slate-500">${interimStr}</span>`;
+                };
+
+                recognition.onend = () => {
+                    // Auto-restart if we didn't manually stop (Android sometimes stops early)
+                    // But here we rely on manual stop mainly.
+                };
+
+                recognition.start();
+                
+                // UI Updates
                 isRecording = true;
                 elements.recordBtn.className = "bg-red-600 text-white border border-red-600 py-4 rounded-xl flex flex-col items-center justify-center gap-1 transition touch-manipulation shadow-lg shadow-red-900/50";
                 elements.micIcon.classList.add('animate-pulse');
                 elements.recordText.textContent = '停止並分析';
                 
+                // Clear previous
                 elements.feedbackSection.classList.remove('hidden');
                 elements.userSaidDisplay.textContent = '...';
                 elements.scoreDisplay.textContent = '--';
@@ -333,70 +403,43 @@
                 elements.userAudio.src = "";
                 
                 elements.feedbackSection.scrollIntoView({ behavior: 'smooth' });
-                startAudioRecorder();
-            };
 
-            recognition.onend = () => {
-                isRecording = false;
-                elements.recordBtn.className = "bg-red-600/20 active:bg-red-600/30 text-red-400 border border-red-600/50 py-4 rounded-xl flex flex-col items-center justify-center gap-1 transition touch-manipulation";
-                elements.micIcon.classList.remove('animate-pulse');
-                elements.recordText.textContent = '重新錄音';
-                stopAudioRecorder();
-
-                const finalText = elements.userSaidDisplay.innerText.replace(/\.\.\./g, '').trim();
-                if (finalText.length > 0) analyzePronunciation(finalText);
-            };
-
-            recognition.onresult = (event) => {
-                let finalStr = '';
-                let interimStr = '';
-                for (let i = 0; i < event.results.length; ++i) {
-                    if (event.results[i].isFinal) finalStr += event.results[i][0].transcript;
-                    else interimStr += event.results[i][0].transcript;
-                }
-                elements.userSaidDisplay.innerHTML = `<span class="text-white">${finalStr}</span><span class="text-slate-500">${interimStr}</span>`;
-            };
-
-            recognition.onerror = (event) => {
-                console.error(event.error);
-                if(isRecording && event.error !== 'no-speech') stopRecording();
-                if(event.error === 'not-allowed') alert("請允許麥克風權限");
-            };
-
-            elements.recordBtn.addEventListener('click', () => {
-                if (isRecording) stopRecording();
-                else startRecording();
-            });
-        } else {
-            elements.recordBtn.disabled = true;
-            elements.recordText.textContent = '不支援';
-            alert("iOS 請用 Safari，Android 請用 Chrome");
+            } catch (err) {
+                console.error("Recording Start Error:", err);
+                alert("無法啟動錄音: " + err.message + "\n請確認已允許麥克風權限且使用 HTTPS。");
+            }
         }
 
-        function startRecording() { try { recognition.start(); } catch(e) { console.error(e); } }
-        function stopRecording() { try { recognition.stop(); } catch(e) { console.error(e); } }
-
-        async function startAudioRecorder() {
-            audioChunks = [];
-            try {
-                audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(audioStream);
-                mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
-                mediaRecorder.onstop = () => {
-                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                    elements.userAudio.src = URL.createObjectURL(audioBlob);
-                    elements.audioPlayerContainer.classList.remove('hidden');
-                    audioStream.getTracks().forEach(track => track.stop());
-                };
-                mediaRecorder.start();
-            } catch (err) { console.error("Audio recording failed:", err); }
-        }
-
-        function stopAudioRecorder() {
+        function stopAllRecording() {
+            isRecording = false;
+            
+            // Stop Audio
             if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+            if (audioStream) audioStream.getTracks().forEach(track => track.stop());
+
+            // Stop Recognition
+            if (recognition) {
+                recognition.stop();
+                // Check buffer + any interim that might be left in UI
+                setTimeout(() => {
+                    const textToAnalyze = elements.userSaidDisplay.innerText.trim();
+                    if (textToAnalyze.length > 0 && textToAnalyze !== '...') {
+                        analyzePronunciation(textToAnalyze);
+                    } else if (finalTranscriptBuffer.trim().length > 0) {
+                        analyzePronunciation(finalTranscriptBuffer);
+                    } else {
+                        elements.userSaidDisplay.textContent = "(未偵測到語音，請靠近麥克風重試)";
+                    }
+                }, 500); // Wait a bit for final events
+            }
+
+            // UI Reset
+            elements.recordBtn.className = "bg-red-600/20 active:bg-red-600/30 text-red-400 border border-red-600/50 py-4 rounded-xl flex flex-col items-center justify-center gap-1 transition touch-manipulation";
+            elements.micIcon.classList.remove('animate-pulse');
+            elements.recordText.textContent = '重新錄音';
         }
 
-        // --- Main Logic ---
+        // --- Main Logic (Unchanged) ---
         async function generateSentence() {
             if (isProcessing) return;
             if (!apiKey) { elements.apiKeyPanel.classList.remove('hidden'); return; }
@@ -444,7 +487,6 @@
                 const data = JSON.parse(res);
                 currentSentence = data.sentence;
                 
-                // Update Sentence
                 elements.contentArea.innerHTML = `
                     <h2 class="text-xl md:text-2xl font-bold leading-snug break-words">${data.sentence}</h2>
                     <p class="ipa-text text-sm mt-2 tracking-wide">${data.ipa}</p>
@@ -454,7 +496,6 @@
                     </div>
                 `;
 
-                // Render Drills
                 if (data.drills && data.drills.length > 0) {
                     elements.drillContainer.innerHTML = data.drills.map(d => `
                         <button onclick="speak('${d.text}')" class="bg-slate-700 hover:bg-slate-600 active:bg-blue-600 border border-slate-600 rounded-lg px-3 py-2 flex flex-col items-center min-w-[80px] transition group">
@@ -466,7 +507,6 @@
                     elements.drillSection.classList.remove('hidden');
                 }
 
-                // Update Learning Section
                 elements.examPointDisplay.textContent = data.exam_point || "無考點資料";
                 elements.grammarNote.innerHTML = data.grammar ? data.grammar.split('\n').map(l => `<p>${l}</p>`).join('') : "無文法資料";
                 
